@@ -1,0 +1,4 @@
+flocking:
+  commands: [
+    start_hover_mode, start_swarming_mode, close_node,
+  ]

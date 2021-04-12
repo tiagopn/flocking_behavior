@@ -1,0 +1,3 @@
+# Altitude state estimator:
+# HEIGHT - rangefinder
+altitude_estimator: "BARO"
