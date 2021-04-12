@@ -12,6 +12,7 @@ void Formation::onInit() {
   hover_mode_            = false;
   swarming_mode_         = false;
   state_machine_running_ = false;
+  first_run_             = true;
 
   ros::NodeHandle nh("~");
 
@@ -42,7 +43,7 @@ void Formation::onInit() {
   param_loader.loadParam("flocking/motion/K3", _K3_);
   param_loader.loadParam("flocking/motion/move_forward", _move_forward_);
   param_loader.loadParam("flocking/motion/interpolate_coeff", _interpolate_coeff_);
-  
+
   if (!param_loader.loadedSuccessfully()) {
     ROS_ERROR("[Formation]: failed to load non-optional parameters!");
     ros::shutdown();
@@ -60,12 +61,12 @@ void Formation::onInit() {
   max_range_ = _range_multipler_ * _desired_distance_;
 
   /* get current heading */
-  nav_msgs::Odometry::ConstPtr       odom   = ros::topic::waitForMessage<nav_msgs::Odometry>("/" + _uav_name_ + "/odometry/odom_main", ros::Duration(15));
-  mrs_msgs::Float64Stamped::ConstPtr height = ros::topic::waitForMessage<mrs_msgs::Float64Stamped>("/" + _uav_name_ + "/odometry/height", ros::Duration(15));
+  /* nav_msgs::Odometry::ConstPtr       odom   = ros::topic::waitForMessage<nav_msgs::Odometry>("/" + _uav_name_ + "/odometry/odom_main", ros::Duration(15)); */
+  /* mrs_msgs::Float64Stamped::ConstPtr height = ros::topic::waitForMessage<mrs_msgs::Float64Stamped>("/" + _uav_name_ + "/odometry/height", ros::Duration(15)); */
 
   /* set smooth or virtual heading */
-  smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
-  
+  /* smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading(); */
+
   /* publishers */
   pub_mode_changed_ = nh.advertise<flocking::ModeStamped>("/" + _uav_name_ + "/flocking/mode_changed", 1);
 
@@ -109,6 +110,12 @@ void Formation::onInit() {
 void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighbors, const nav_msgs::Odometry::ConstPtr& odom,
                                      const mrs_msgs::Float64Stamped::ConstPtr& height) {
   /* return if is not initialized or the code is not on swarming mode */
+
+  if (first_run_) {
+    smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
+    first_run_      = false;
+  }
+
   if (!is_initialized_ || !swarming_mode_) {
     return;
   }
@@ -150,14 +157,14 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
   /* get current heading */
   double heading = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
 
-  
+
   smooth_heading_ = mrs_lib::geometry::radians::interp(smooth_heading_, heading, _interpolate_coeff_);
 
   /* fill in reference */
   srv_reference_stamped_msg.request.reference.position.x = odom->pose.pose.position.x + u * cos(heading);
   srv_reference_stamped_msg.request.reference.position.y = odom->pose.pose.position.y + u * sin(heading);
   srv_reference_stamped_msg.request.reference.heading    = smooth_heading_ + w;
-  
+
 
   double height_push;
   double desired_altitude;
@@ -191,16 +198,20 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
   bw_.setParentFrame(srv_reference_stamped_msg.request.header.frame_id);
 
   // example of plotting a red square
-  bw_.addPoint(vec3_t(srv_reference_stamped_msg.request.reference.position.x, srv_reference_stamped_msg.request.reference.position.y, srv_reference_stamped_msg.request.reference.position.z), 1.0, 0.0, 0.0, 1.0);
+  bw_.addPoint(vec3_t(srv_reference_stamped_msg.request.reference.position.x, srv_reference_stamped_msg.request.reference.position.y,
+                      srv_reference_stamped_msg.request.reference.position.z),
+               1.0, 0.0, 0.0, 1.0);
   bw_.setPointsScale(0.3);
 
   // this should plot a vector, but does not work now
-  Eigen::Vector3d uav_pose(odom->pose.pose.position.x, odom->pose.pose.position.y, odom->pose.pose.position.z);
-  Eigen::Vector3d vector_tip(srv_reference_stamped_msg.request.reference.position.x, srv_reference_stamped_msg.request.reference.position.y, srv_reference_stamped_msg.request.reference.position.z);
+  Eigen::Vector3d        uav_pose(odom->pose.pose.position.x, odom->pose.pose.position.y, odom->pose.pose.position.z);
+  Eigen::Vector3d        vector_tip(srv_reference_stamped_msg.request.reference.position.x, srv_reference_stamped_msg.request.reference.position.y,
+                             srv_reference_stamped_msg.request.reference.position.z);
   mrs_lib::geometry::Ray ray = mrs_lib::geometry::Ray::twopointCast(uav_pose, vector_tip);
   bw_.addRay(ray, 0, 0, 1, 1);
 
-  /* Eigen::Vector3d center(srv_reference_stamped_msg.request.reference.position.x, srv_reference_stamped_msg.request.reference.position.y, srv_reference_stamped_msg.request.reference.position.z); */
+  /* Eigen::Vector3d center(srv_reference_stamped_msg.request.reference.position.x, srv_reference_stamped_msg.request.reference.position.y,
+   * srv_reference_stamped_msg.request.reference.position.z); */
   /* Eigen::Vector3d scale(0.3, 0.3, 0.3); */
   /* mrs_lib::geometry::Cuboid cub(center, scale, mrs_lib::AttitudeConverter(0, 0, 0)); */
   /* bw_.addCuboid(cub, 0, 0, 1, 1, true); */
@@ -222,6 +233,7 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
 /* callbackTimerStateMachine() //{ */
 
 void Formation::callbackTimerStateMachine([[maybe_unused]] const ros::TimerEvent& event) {
+
   if (!is_initialized_ || !state_machine_running_) {
     return;
   }

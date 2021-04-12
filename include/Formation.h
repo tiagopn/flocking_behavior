@@ -49,6 +49,7 @@ private:
   bool hover_mode_;
   bool swarming_mode_;
   bool _use_3D_;
+  bool first_run_;
 
   /* ros parameters */
   std::string _uav_name_;
@@ -63,10 +64,10 @@ private:
   double _range_multipler_;
   double _steepness_potential_;
   double _strength_potential_;
-  
+
   double max_range_;
   double noise_;
-  
+
   // | ----------------------- motion control parameters ----------------------- |
 
   double _K1_;  // Linear gain
@@ -80,17 +81,18 @@ private:
   // | ----------------------- message filters callbacks ----------------------- |
 
   typedef sync_policies::ApproximateTime<flocking::Neighbors, nav_msgs::Odometry, mrs_msgs::Float64Stamped> FormationPolicy;
-  typedef Synchronizer<FormationPolicy> Sync;
-  boost::shared_ptr<Sync> sync_;
-  
-  message_filters::Subscriber<nav_msgs::Odometry>  sub_odom_;
-  message_filters::Subscriber<flocking::Neighbors> sub_neighbors_info_;
+  typedef Synchronizer<FormationPolicy>                                                                     Sync;
+  boost::shared_ptr<Sync>                                                                                   sync_;
+
+  message_filters::Subscriber<nav_msgs::Odometry>       sub_odom_;
+  message_filters::Subscriber<flocking::Neighbors>      sub_neighbors_info_;
   message_filters::Subscriber<mrs_msgs::Float64Stamped> sub_height_;
 
-  void        callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighbors, const nav_msgs::Odometry::ConstPtr& odom,  const mrs_msgs::Float64Stamped::ConstPtr& height);
+  void        callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighbors, const nav_msgs::Odometry::ConstPtr& odom,
+                                   const mrs_msgs::Float64Stamped::ConstPtr& height);
   std::string _frame_;
   double      _minimum_height_;
-  
+
   // | --------------------------- timer callbacks ----------------------------- |
 
   /* after start the swarming mode, the node will run for ($_timeout_flocking_) seconds */
