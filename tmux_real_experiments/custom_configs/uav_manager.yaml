@@ -8,7 +8,7 @@ takeoff:
     controller: "Se3Controller"
     tracker: "MpcTracker"
 
-  takeoff_height: 2.5
+  takeoff_height: 3.0
 
 # periodically checks if min height was exceeded
 # if so, retakes control and descends below it
