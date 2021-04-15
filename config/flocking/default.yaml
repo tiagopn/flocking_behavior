@@ -8,7 +8,7 @@ flocking:
   # Experiment parameters
   auto_start: false
   swarming_after_hover: 10 # [s]
-  duration: 120 # [s]
+  duration: 1200 # [s]
 
   # Proximal control parameters
   proximal: 
