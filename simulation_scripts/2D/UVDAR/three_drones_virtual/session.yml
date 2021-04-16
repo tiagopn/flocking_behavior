@@ -31,8 +31,8 @@ windows:
       synchronize: after
       panes:
         - waitForSimulation; rosservice call /mrs_drone_spawner/spawn "1 $UAV_TYPE --enable-rangefinder --enable-ground-truth --pos_file `pwd`/pos1.yaml --enable-uv-leds --uvled_s_l 0 --uvled_s_r 0 --enable-uv-camera --uvcam-calib-file `rospack find uvdar_core`/include/OCamCalib/config/calib_results_bf_uv_fe.txt"
-        - waitForSimulation; sleep 5;  rosservice call /mrs_drone_spawner/spawn "2 $UAV_TYPE --enable-rangefinder --enable-ground-truth --pos_file `pwd`/pos2.yaml --enable-uv-leds --uvled_s_l 1 --uvled_s_r 1 --enable-uv-camera --uvcam-calib-file `rospack find uvdar_core`/include/OCamCalib/config/calib_results_bf_uv_fe.txt"
-        - waitForSimulation; sleep 10;  rosservice call /mrs_drone_spawner/spawn "3 $UAV_TYPE --enable-rangefinder --enable-ground-truth --pos_file `pwd`/pos3.yaml --enable-uv-leds --uvled_s_l 2 --uvled_s_r 2 --enable-uv-camera --uvcam-calib-file `rospack find uvdar_core`/include/OCamCalib/config/calib_results_bf_uv_fe.txt"
+        - waitForSimulation; sleep 7;  rosservice call /mrs_drone_spawner/spawn "2 $UAV_TYPE --enable-rangefinder --enable-ground-truth --pos_file `pwd`/pos2.yaml --enable-uv-leds --uvled_s_l 1 --uvled_s_r 1 --enable-uv-camera --uvcam-calib-file `rospack find uvdar_core`/include/OCamCalib/config/calib_results_bf_uv_fe.txt"
+        - waitForSimulation; sleep 15;  rosservice call /mrs_drone_spawner/spawn "3 $UAV_TYPE --enable-rangefinder --enable-ground-truth --pos_file `pwd`/pos3.yaml --enable-uv-leds --uvled_s_l 2 --uvled_s_r 2 --enable-uv-camera --uvcam-calib-file `rospack find uvdar_core`/include/OCamCalib/config/calib_results_bf_uv_fe.txt"
   - control:
       layout: tiled
       synchronize: after

@@ -37,9 +37,9 @@ windows:
       layout: tiled
       synchronize: after
       panes:
-        - export UAV_NAME=uav1; waitForSimulation; roslaunch mrs_uav_general core.launch config_mpc_tracker:=./custom_configs/mpc_tracker.yaml config_odometry:=./custom_configs/odometry.yaml
-        - export UAV_NAME=uav2; waitForSimulation; roslaunch mrs_uav_general core.launch config_mpc_tracker:=./custom_configs/mpc_tracker.yaml config_odometry:=./custom_configs/odometry.yaml
-        - export UAV_NAME=uav3; waitForSimulation; roslaunch mrs_uav_general core.launch config_mpc_tracker:=./custom_configs/mpc_tracker.yaml config_odometry:=./custom_configs/odometry.yaml
+        - export UAV_NAME=uav1; waitForSimulation; roslaunch mrs_uav_general core.launch config_constraint_manager:=./custom_configs/constraint_manager.yaml config_control_manager:=./custom_configs/control_manager.yaml config_mpc_tracker:=./custom_configs/mpc_tracker.yaml config_odometry:=./custom_configs/odometry.yaml config_uav_manager:=./custom_configs/uav_manager.yaml
+        - export UAV_NAME=uav2; waitForSimulation; roslaunch mrs_uav_general core.launch config_constraint_manager:=./custom_configs/constraint_manager.yaml config_control_manager:=./custom_configs/control_manager.yaml config_mpc_tracker:=./custom_configs/mpc_tracker.yaml config_odometry:=./custom_configs/odometry.yaml config_uav_manager:=./custom_configs/uav_manager.yaml
+        - export UAV_NAME=uav3; waitForSimulation; roslaunch mrs_uav_general core.launch config_constraint_manager:=./custom_configs/constraint_manager.yaml config_control_manager:=./custom_configs/control_manager.yaml config_mpc_tracker:=./custom_configs/mpc_tracker.yaml config_odometry:=./custom_configs/odometry.yaml config_uav_manager:=./custom_configs/uav_manager.yaml
   - automatic_start:
       layout: tiled
       synchronize: after
@@ -104,9 +104,9 @@ windows:
       layout: tiled
       synchronize: after
       panes:
-        - export UAV_NAME=uav1; waitForOdometry; roslaunch flocking sensor_neighbor.launch config_sensor_type:=./custom_configs/sensor.yaml
-        - export UAV_NAME=uav2; waitForOdometry; roslaunch flocking sensor_neighbor.launch config_sensor_type:=./custom_configs/sensor.yaml
-        - export UAV_NAME=uav3; waitForOdometry; roslaunch flocking sensor_neighbor.launch config_sensor_type:=./custom_configs/sensor.yaml
+        - export UAV_NAME=uav1; waitForOdometry; roslaunch flocking sensor_neighbor.launch config_sensor:=./custom_configs/sensor.yaml
+        - export UAV_NAME=uav2; waitForOdometry; roslaunch flocking sensor_neighbor.launch config_sensor:=./custom_configs/sensor.yaml
+        - export UAV_NAME=uav3; waitForOdometry; roslaunch flocking sensor_neighbor.launch config_sensor:=./custom_configs/sensor.yaml
   - formation:
       layout: tiled
       synchronize: after

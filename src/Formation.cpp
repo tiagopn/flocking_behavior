@@ -219,7 +219,7 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
     // srv_reference_stamped_msg.request.reference.position.z = math_utils::getMaxValue(odom->pose.pose.position.z + v, odom->pose.pose.position.z +
     // neighbors->max_height_diff);
 
-    desired_altitude = desired_altitude + neighbors->max_height_diff;
+    //desired_altitude = desired_altitude + neighbors->max_height_diff;
 
     srv_reference_stamped_msg.request.reference.position.z = desired_altitude;
   }

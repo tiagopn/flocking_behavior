@@ -42,7 +42,7 @@ input=(
 '
   'hover_mode' 'rosservice call /command_sender/send_command "value: 0"'
   'swarming_mode' 'rosservice call /command_sender/send_command "value: 1"'
-  'sensor_neighbor' 'waitForRos; roslaunch flocking sensor_neighbor.launch config_sensor_type:=./custom_configs/sensor.yaml
+  'sensor_neighbor' 'waitForRos; roslaunch flocking sensor_neighbor.launch config_sensor:=./custom_configs/sensor.yaml
 '
   'uvdar_observer' 'waitForRos; roslaunch uvdar_core test_rw_two_sided.launch 
 '  
