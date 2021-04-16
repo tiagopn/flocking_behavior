@@ -14,13 +14,13 @@ fi
 source $HOME/.bashrc
 
 # change this to your liking
-PROJECT_NAME=tiago_gps_swarm_3D
+PROJECT_NAME=tiago_gps_swarm_3D_in_the_dunes
 
 # do not change this
 MAIN_DIR=~/"bag_files"
 
 # following commands will be executed first in each window
-pre_input="mkdir -p $MAIN_DIR/$PROJECT_NAME; export WORLD_FILE=./world_behind_dune.yaml"
+pre_input="mkdir -p $MAIN_DIR/$PROJECT_NAME; export WORLD_FILE=./world_desert.yaml"
 
 # define commands
 # 'name' 'command'
