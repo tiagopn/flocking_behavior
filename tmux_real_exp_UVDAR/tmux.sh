@@ -32,7 +32,7 @@ input=(
 '
   'Sensors' 'waitForRos; roslaunch mrs_uav_general sensors.launch
 '
-  'Status' 'waitForRos; roslaunch mrs_uav_status status.launch
+  'Status' 'waitForRos; roslaunch mrs_uav_status acquisition.launch
 '
   'Control' 'waitForRos; roslaunch mrs_uav_general core.launch config_constraint_manager:=./custom_configs/constraint_manager.yaml config_control_manager:=./custom_configs/control_manager.yaml config_mpc_tracker:=./custom_configs/mpc_tracker.yaml config_odometry:=./custom_configs/odometry.yaml config_uav_manager:=./custom_configs/uav_manager.yaml config_uav_names:=./custom_configs/uav_names.yaml
 '
