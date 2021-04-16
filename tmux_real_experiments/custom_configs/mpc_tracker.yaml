@@ -2,5 +2,5 @@
 collision_avoidance:
 
   enabled: true
-  radius: 3.0 # [m]
+  radius: 2.5 # [m]
   trajectory_timeout: 2.0 # [s]

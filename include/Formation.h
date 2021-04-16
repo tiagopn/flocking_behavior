@@ -75,8 +75,11 @@ private:
   double _K3_;
   double _move_forward_;
   double _interpolate_coeff_;
+  bool  _fixed_heading_;
 
+  double virtual_heading_;
   double smooth_heading_;
+  double initial_heading_;
 
   // | ----------------------- message filters callbacks ----------------------- |
 

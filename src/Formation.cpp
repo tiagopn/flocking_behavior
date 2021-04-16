@@ -66,7 +66,9 @@ void Formation::onInit() {
 
   /* set smooth or virtual heading */
   /* smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading(); */
-
+  
+  pub_virtual_heading_ = nh.advertise<mrs_msgs::Float64Stamped>("/" + _uav_name_ + "/flocking/virtual_heading", 1);
+ 
   /* publishers */
   pub_mode_changed_ = nh.advertise<flocking::ModeStamped>("/" + _uav_name_ + "/flocking/mode_changed", 1);
 
@@ -112,7 +114,13 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
   /* return if is not initialized or the code is not on swarming mode */
 
   if (first_run_) {
-    smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
+    //smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
+    if (_fixed_heading_) {
+      initial_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
+      virtual_heading_ = initial_heading_;
+    } else {
+      smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
+    }
     first_run_      = false;
   }
 
@@ -157,14 +165,38 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
   /* get current heading */
   double heading = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
 
+  if (_fixed_heading_) {
+    virtual_heading_ = mrs_lib::geometry::radians::interp(virtual_heading_, heading, _interpolate_coeff_);
 
-  smooth_heading_ = mrs_lib::geometry::radians::interp(smooth_heading_, heading, _interpolate_coeff_);
+    /* fill in reference */
+    srv_reference_stamped_msg.request.reference.position.x = odom->pose.pose.position.x + u * cos(virtual_heading_);
+    srv_reference_stamped_msg.request.reference.position.y = odom->pose.pose.position.y + u * sin(virtual_heading_);
+    srv_reference_stamped_msg.request.reference.heading    = initial_heading_;
 
-  /* fill in reference */
-  srv_reference_stamped_msg.request.reference.position.x = odom->pose.pose.position.x + u * cos(heading);
-  srv_reference_stamped_msg.request.reference.position.y = odom->pose.pose.position.y + u * sin(heading);
-  srv_reference_stamped_msg.request.reference.heading    = smooth_heading_ + w;
+    /* update virtual heading */
+    virtual_heading_ = virtual_heading_ + w;
 
+    /* create float64 stamped msg */
+    mrs_msgs::Float64Stamped msg_float_stamped;
+  
+    /* fill in */
+    msg_float_stamped.header.stamp    = ros::Time::now();
+    msg_float_stamped.header.frame_id = _uav_name_ + "/" + _frame_;
+    msg_float_stamped.value           = virtual_heading_;
+
+    /* publish virtual heading */
+    pub_virtual_heading_.publish(msg_float_stamped);
+
+  } else {
+
+    smooth_heading_ = mrs_lib::geometry::radians::interp(smooth_heading_, heading, _interpolate_coeff_);
+
+    /* fill in reference */
+    srv_reference_stamped_msg.request.reference.position.x = odom->pose.pose.position.x + u * cos(heading);
+    srv_reference_stamped_msg.request.reference.position.y = odom->pose.pose.position.y + u * sin(heading);
+    srv_reference_stamped_msg.request.reference.heading    = smooth_heading_ + w;
+
+  }
 
   double height_push;
   double desired_altitude;
