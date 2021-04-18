@@ -42,9 +42,9 @@ input=(
 '
   'hover_mode' 'rosservice call /command_sender/send_command "value: 0"'
   'swarming_mode' 'rosservice call /command_sender/send_command "value: 1"'
-  'sensor_neighbor' 'waitForRos; roslaunch flocking sensor_neighbor.launch use_3D:=true config_uav_names:=./custom_configs/uav_names.yaml
+  'sensor_neighbor' 'waitForRos; roslaunch flocking sensor_neighbor.launch config_uav_names:=./custom_configs/uav_names.yaml
 '
-  'formation' 'waitForRos; roslaunch flocking formation.launch use_3D:=true
+  'formation' 'waitForRos; roslaunch flocking formation.launch
 '
   'slow_odom' 'waitForRos; rostopic echo /'"$UAV_NAME"'/odometry/slow_odom
 '
@@ -148,7 +148,9 @@ done
 # send commands
 for ((i=0; i < ${#cmds[*]}; i++));
 do
-  $TMUX_BIN send-keys -t $SESSION_NAME:$(($i+1)) "cd $SCRIPTPATH;${pre_input};${cmds[$i]}"
+  $TMUX_BIN send-keys -t $SESSION_NAME:$(($i+1)) "cd $SCRIPTPATH;
+${pre_input};
+${cmds[$i]}"
 done
 
 # identify the index of the init window

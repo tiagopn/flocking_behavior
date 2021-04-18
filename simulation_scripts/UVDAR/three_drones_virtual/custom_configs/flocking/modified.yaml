@@ -1,0 +1,10 @@
+flocking:
+  duration: 1200
+
+  proximal:
+    desired_distance: 5.0
+    strength_potential: 5.0
+  
+  motion:
+    K2: 0.1
+    fixed_heading: true

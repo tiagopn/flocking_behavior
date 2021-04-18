@@ -52,7 +52,7 @@ input=(
 '
   'throttle_right_camera' 'waitForRos; rosrun topic_tools throttle messages /'"$UAV_NAME"'/uvdar_bluefox/right/image_raw 2.0 
 '
-  'formation' 'waitForRos; roslaunch flocking formation.launch use_3D:=true
+  'formation' 'waitForRos; roslaunch flocking formation.launch
 '
   'slow_odom' 'waitForRos; rostopic echo /'"$UAV_NAME"'/odometry/slow_odom
 '

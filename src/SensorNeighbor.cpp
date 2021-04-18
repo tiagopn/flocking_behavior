@@ -19,7 +19,7 @@ void SensorNeighbor::onInit() {
 
   /* load parameters */
   param_loader.loadParam("sensor_type", _sensor_type_);
-  param_loader.loadParam("use_3D", _use_3D_);
+  //param_loader.loadParam("use_3D", _use_3D_);
   
   param_loader.loadParam("uav_name", _this_uav_name_);
 
@@ -298,7 +298,7 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
           /* check if this uav local height is available and local height stamp */
           if (!has_this_uav_local_height_ || (now - this_uav_local_height_.header.stamp).toSec() > 2.0) continue;
 
-          if (_use_3D_) { 
+          if (pow(this_uav_local_height_.value - neighbors_height_[uav_id].value, 2)>=0.25) { 
             /* estimate range and inclination */
             range       = sqrt(pow(focal_x - itr_point->second.x, 2) + pow(focal_y - itr_point->second.y,
                                2) + pow(this_uav_local_height_.value - neighbors_height_[uav_id].value, 2));

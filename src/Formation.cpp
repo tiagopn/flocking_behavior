@@ -24,7 +24,7 @@ void Formation::onInit() {
   param_loader.loadParam("uav_name", _uav_name_);
   param_loader.loadParam("frame", _frame_);
   param_loader.loadParam("land_at_the_end", _land_end_);
-  param_loader.loadParam("use_3D", _use_3D_);
+  //param_loader.loadParam("use_3D", _use_3D_);
   param_loader.loadParam("minimum_height", _minimum_height_);
 
   param_loader.loadParam("flocking/auto_start", _auto_start_);
@@ -43,6 +43,7 @@ void Formation::onInit() {
   param_loader.loadParam("flocking/motion/K3", _K3_);
   param_loader.loadParam("flocking/motion/move_forward", _move_forward_);
   param_loader.loadParam("flocking/motion/interpolate_coeff", _interpolate_coeff_);
+  param_loader.loadParam("flocking/motion/fixed_heading", _fixed_heading_);
 
   if (!param_loader.loadedSuccessfully()) {
     ROS_ERROR("[Formation]: failed to load non-optional parameters!");
@@ -210,19 +211,19 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
   }
 
   /* set height */
-  if (_use_3D_) {
+  //if (_use_3D_) {
     // srv_reference_stamped_msg.request.reference.position.z = math_utils::getMaxValue(odom->pose.pose.position.z + v, _minimum_height_);
 
     srv_reference_stamped_msg.request.reference.position.z = desired_altitude;
 
-  } else {
+  //} else {
     // srv_reference_stamped_msg.request.reference.position.z = math_utils::getMaxValue(odom->pose.pose.position.z + v, odom->pose.pose.position.z +
     // neighbors->max_height_diff);
 
     //desired_altitude = desired_altitude + neighbors->max_height_diff;
 
-    srv_reference_stamped_msg.request.reference.position.z = desired_altitude;
-  }
+  //  srv_reference_stamped_msg.request.reference.position.z = desired_altitude;
+  //}
 
   bw_.clearBuffers();
   /* bw_.clearVisuals(); */
