@@ -12,15 +12,15 @@ flocking:
 
   # Proximal control parameters
   proximal: 
-    desired_distance: 8.0
+    desired_distance: 5.0
     range_multiplier: 1.8 
     steepness_potential: 2.0
-    strength_potential: 8.0
+    strength_potential: 5.0
 
   # Motion control parameters
   motion:
     K1: 0.5  # Linear gain
-    K2: 0.2  # Angular gain
+    K2: 0.1  # Angular gain 0.2 for GPS
     K3: 0.1
     move_forward: 0.2 
     interpolate_coeff: 0.95
