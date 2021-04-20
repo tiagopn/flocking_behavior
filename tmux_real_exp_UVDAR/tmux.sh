@@ -20,7 +20,7 @@ PROJECT_NAME=tiago_uvdar_swarm_3D
 MAIN_DIR=~/"bag_files"
 
 # following commands will be executed first in each window
-pre_input="mkdir -p $MAIN_DIR/$PROJECT_NAME; export WORLD_FILE=./world.yaml"
+pre_input="mkdir -p $MAIN_DIR/$PROJECT_NAME; export WORLD_FILE=./world_desert_extended.yaml"
 
 # define commands
 # 'name' 'command'
