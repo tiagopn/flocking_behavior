@@ -20,7 +20,7 @@ flocking:
   # Motion control parameters
   motion:
     K1: 0.25  # Linear gain 0.5 for GPS
-    K2: 0.1  # Angular gain 0.2 for GPS
+    K2: 0.05  # Angular gain 0.2 for GPS
     K3: 0.1
     move_forward: 0.3 
     interpolate_coeff: 0.95
@@ -29,8 +29,7 @@ flocking:
 # Tryouts:
 # K1=0.25 K2=0.1
 # K1=0.25 K2=0.05
-# K1=0.3 K2=0.1
-# K1=0.3 K2=0.05
-# K1=0.4 K2=0.1
+# K1=0.4 K2=0.05
+
 
 

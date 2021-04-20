@@ -1,0 +1,6 @@
+# mrs collision avoidance
+collision_avoidance:
+
+  enabled: true
+  radius: 2.5 # [m]
+  trajectory_timeout: 2.0 # [s]
