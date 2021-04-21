@@ -83,7 +83,12 @@ void SensorNeighbor::onInit() {
 
   /* subscribe to this UAV Odometry */
   sub_this_uav_odom_ = nh.subscribe<nav_msgs::Odometry>("/" + _this_uav_name_ + "/odometry/odom_main", 1, &SensorNeighbor::callbackThisUAVOdom, this);
-
+  
+  sub_this_uav_mode_changed_ = nh.subscribe<flocking::ModeStamped>("/" + _this_uav_name_ + "/flocking/mode_changed", 1, &SensorNeighbor::callbackThisUAVModeChanged, this);
+  
+  /* services */
+  srv_client_land_ = nh.serviceClient<std_srvs::Trigger>("/" + _this_uav_name_ + "/uav_manager/land");
+  
   /* publisher */
   pub_neighbors_ = nh.advertise<flocking::Neighbors>("/" + _this_uav_name_ + "/sensor_neighbor/neighbors", 1);
 
@@ -160,6 +165,19 @@ void SensorNeighbor::callbackThisUAVVirtualHeading(const mrs_msgs::Float65Stampe
 }
 
 //}
+  
+void SensorNeighbor::callbackThisUAVModeChanged(const flocking::Neighbors::ConstPrt& mode_changed) {
+  if (!is_initialized_) {
+    return;
+  }
+  
+  if (mode_changed->mode == "Swarming") {
+    {
+      std::scoped_lock lock(mutex_mode_changed_);
+      has_started_swarming_mode_ = true;
+    }
+  }
+}
   
 // callbackNeighborsUsingGPSOdom() --> call back para a pose dos UAVs Vizinhos usando GPS
 
@@ -388,7 +406,19 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
       }
     }
   }
-
+  
+  if (!last_message_invalid_ && has_started_swarming_mode_ && neighbor_info.range.size() == 0) {
+    last_message_invalid_ = true;
+    last_message_invalid_time_ = now;
+  } else {
+    last_message_invalid_ = false; 
+  }
+  
+  if ((now - last_message_invalid_time_).toSec() < 5.0) {
+    std_srvs::Trigger srv_land_call;
+    srv_client_land_.call(srv_land_call);
+  }
+  
   neighbor_info.header.frame_id = _this_uav_name_ + "/fcu";
   neighbor_info.header.stamp    = now;
   neighbor_info.num_neighbors   = neighbor_info.range.size();
