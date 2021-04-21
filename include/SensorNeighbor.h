@@ -71,6 +71,7 @@ private:
   ros::Subscriber sub_virtual_heading_;
   double this_uav_virtual_heading_;
   bool _use_fixed_heading_;
+  bool has_this_uav_virtual_heading_;
   std::mutex mutex_virtual_heading_;
   
   void callbackThisUAVModeChanged(const flocking::ModeChanged::ConstPrt& mode_changed);
