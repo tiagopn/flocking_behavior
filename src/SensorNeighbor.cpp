@@ -22,6 +22,8 @@ void SensorNeighbor::onInit() {
   //param_loader.loadParam("use_3D", _use_3D_);
   
   param_loader.loadParam("uav_name", _this_uav_name_);
+  
+  param_loader.loadParam("use_fixed_heading", _use_fixed_heading_);
 
   if (!param_loader.loadedSuccessfully()) {
     ROS_ERROR("[SensorNeighbor]: failed to load non-optional parameters!");
@@ -72,6 +74,8 @@ void SensorNeighbor::onInit() {
     /* subscribe to UVDAR filtered poses */
     sub_uvdar_filtered_poses_ = nh.subscribe<mrs_msgs::PoseWithCovarianceArrayStamped>("/" + _this_uav_name_ + "/uvdar/filteredPoses", 1,
                                 &SensorNeighbor::callbackNeighborsUsingUVDAR, this);
+    
+    sub_virtual_heading_ = nh.subscribe<mrs_msgs::Float64Stamped>("/" + _this_uav_name_ + "/flocking/virtual_heading", 1, &SensorNeighbor::callbackThisUAVVirtualHeading, this);
   } else {
     ROS_ERROR("[SensorNeighbor]: The sensor %s is not supported. Shutting down.", _sensor_type_.c_str());
     ros::shutdown();
@@ -141,6 +145,22 @@ void SensorNeighbor::callbackThisUAVLocalOdom(const mrs_msgs::Float64Stamped::Co
 
 //}
 
+// callbackThisUAVVirtualHeading() //
+  
+void SensorNeighbor::callbackThisUAVVirtualHeading(const mrs_msgs::Float65Stamped::ConstPrt& virtual_heading) {
+  if (!is_initialized_) {
+    return;
+  }
+  
+  {
+    std::scoped_lock lock(mutex_virtual_heading_);
+
+    this_uav_virtual_heading_ = virtual_heading->value;
+  }
+}
+
+//}
+  
 // callbackNeighborsUsingGPSOdom() --> call back para a pose dos UAVs Vizinhos usando GPS
 
 void SensorNeighbor::callbackNeighborsUsingGPSOdom(const nav_msgs::Odometry::ConstPtr& odom, const unsigned int uav_id) {
@@ -328,7 +348,15 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
     for (auto itr = neighbors_position_.begin(); itr != neighbors_position_.end(); ++itr) {
       if ((now - itr->second.header.stamp).toSec() < 2.0) {
         /* estimate bearing, range and inclination */
-        const double bearing     = math_utils::relativeBearing(focal_x, focal_y, focal_heading, itr->second.point.x, itr->second.point.y);
+        double bearing;
+        if (_use_fixed_heading_){
+          {
+            std::scoped_lock lock(mutex_virtual_heading_);
+            bearing = math_utils::relativeBearing(focal_x, focal_y, this_uav_virtual_heading_, itr->second.point.x, itr->second.point.y);
+          }
+        } else {
+          bearing = math_utils::relativeBearing(focal_x, focal_y, focal_heading, itr->second.point.x, itr->second.point.y);
+        }
 
         double range, inclination;
 
