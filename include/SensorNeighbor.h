@@ -17,6 +17,8 @@
 
 #include <geometry_msgs/PointStamped.h>
 
+#include <std_srvs/Trigger.h>
+
 #include <math.h>
 
 #include <map>
@@ -25,6 +27,7 @@
 /* custom msgs */
 #include <flocking/Neighbors.h>
 #include <flocking/Point2DStamped.h>
+#include <flocking/ModeStamped.h>
 
 /* custom library */
 #include <MathUtils.h>
@@ -70,6 +73,12 @@ private:
   bool _use_fixed_heading_;
   std::mutex mutex_virtual_heading_;
   
+  void callbackThisUAVModeChanged(const flocking::ModeChanged::ConstPrt& mode_changed);
+  bool has_started_swarming_mode_;
+  bool last_message_invalid_;
+  ros::Time last_message_invalid_time_; 
+  std::mutex mutex_mode_changed_;
+  
   /* GPS */
   void                                             callbackNeighborsUsingGPSOdom(const nav_msgs::Odometry::ConstPtr& odom, const unsigned int uav_id);
   std::vector<ros::Subscriber>                     sub_odom_uavs_;
@@ -86,7 +95,11 @@ private:
   ros::Subscriber                                     sub_uvdar_filtered_poses_;
   std::map<unsigned int, geometry_msgs::PointStamped> neighbors_position_;
   std::mutex                                          mutex_neighbors_position_;
-
+  
+  // | ------------------------ service clients callbacks ---------------------- |
+  
+  ros::ServiceClient srv_client_land_;
+  
   // | --------------------------- timer callbacks ----------------------------- |
 
   void           callbackTimerPubNeighbors(const ros::TimerEvent& event);
