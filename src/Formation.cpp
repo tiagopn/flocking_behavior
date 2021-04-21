@@ -140,8 +140,18 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
       if (neighbors->range[i] <= max_range_) {
         prox_magnitude = Formation::getProximalMagnitude(neighbors->range[i]);
 
-        prox_vector_x += prox_magnitude * sin(neighbors->inclination[i]) * cos(neighbors->bearing[i]);
-        prox_vector_y += prox_magnitude * sin(neighbors->inclination[i]) * sin(neighbors->bearing[i]);
+        if (_fixed_heading_) {
+
+          prox_vector_x += prox_magnitude * sin(neighbors->inclination[i]) * cos(neighbors->bearing[i]);
+          prox_vector_y += prox_magnitude * sin(neighbors->inclination[i]) * sin(neighbors->bearing[i]);
+
+        }else {
+
+          prox_vector_x += prox_magnitude * sin(neighbors->inclination[i]) * cos(neighbors->bearing[i]);
+          prox_vector_y += prox_magnitude * sin(neighbors->inclination[i]) * sin(neighbors->bearing[i]);
+
+        }
+
         prox_vector_z += prox_magnitude * cos(neighbors->inclination[i]);
       }
     }

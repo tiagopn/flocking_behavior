@@ -99,7 +99,7 @@ void SensorNeighbor::onInit() {
 
 // | ---------------------- subscriber callbacks ------------------------- |
 
-/* callbackThisUAVOdom() //{ */
+// callbackThisUAVOdom() --> call back para a pose deste UAV 
 
 void SensorNeighbor::callbackThisUAVOdom(const nav_msgs::Odometry::ConstPtr& odom) {
   if (!is_initialized_) {
@@ -120,7 +120,7 @@ void SensorNeighbor::callbackThisUAVOdom(const nav_msgs::Odometry::ConstPtr& odo
 
 //}
 
-/* callbackThisUAVLocalOdom() //{ */
+// callbackThisUAVLocalOdom() --> call back para a Altura (Height) deste UAV
 
 void SensorNeighbor::callbackThisUAVLocalOdom(const mrs_msgs::Float64Stamped::ConstPtr& height) {
   if (!is_initialized_) {
@@ -141,7 +141,7 @@ void SensorNeighbor::callbackThisUAVLocalOdom(const mrs_msgs::Float64Stamped::Co
 
 //}
 
-/* callbackNeighborsUsingGPSOdom() //{ */
+// callbackNeighborsUsingGPSOdom() --> call back para a pose dos UAVs Vizinhos usando GPS
 
 void SensorNeighbor::callbackNeighborsUsingGPSOdom(const nav_msgs::Odometry::ConstPtr& odom, const unsigned int uav_id) {
   if (!is_initialized_) {
@@ -171,7 +171,7 @@ void SensorNeighbor::callbackNeighborsUsingGPSOdom(const nav_msgs::Odometry::Con
 //}
 
 
-/* callbackNeighborsUsingGPSOdomLocal //{ */
+// callbackNeighborsUsingGPSOdomLocal --> call back para a Altura (Height) dos UAVs Vizinhos usando GPS
 
 void SensorNeighbor::callbackNeighborsUsingGPSOdomLocal(const mrs_msgs::Float64Stamped::ConstPtr& height, const unsigned int uav_id) {
   if (!is_initialized_) {
@@ -199,7 +199,7 @@ void SensorNeighbor::callbackNeighborsUsingGPSOdomLocal(const mrs_msgs::Float64S
 
 //}
 
-/* callbackNeighborsUsingUVDAR //{ */
+// callbackNeighborsUsingUVDAR --> call back para a pose e para a Altura (height) dos UAVs Vizinhos usando UVDAR
 
 void SensorNeighbor::callbackNeighborsUsingUVDAR(const mrs_msgs::PoseWithCovarianceArrayStamped::ConstPtr& array_poses) {
   if (!is_initialized_ || !has_this_pose_) {
@@ -236,6 +236,8 @@ void SensorNeighbor::callbackNeighborsUsingUVDAR(const mrs_msgs::PoseWithCovaria
         /* save estimated position */
         const unsigned int uav_id = array_poses->poses[i].id;
 
+        // usar o virtual heading publicado
+        // prencher esse vetor com um limiar de tempo de aquisição de dados
         if (neighbors_position_.find(uav_id) == neighbors_position_.end()) {
           neighbors_position_.insert(std::pair<unsigned int, geometry_msgs::PointStamped>(uav_id, uav_point_transformed.value()));
         } else {
@@ -327,11 +329,30 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
       if ((now - itr->second.header.stamp).toSec() < 2.0) {
         /* estimate bearing, range and inclination */
         const double bearing     = math_utils::relativeBearing(focal_x, focal_y, focal_heading, itr->second.point.x, itr->second.point.y);
-        const double range       = sqrt(pow(focal_x - itr->second.point.x, 2) + pow(focal_y - itr->second.point.y, 2));
-        const double inclination = M_PI / 2;
+
+        double range, inclination;
+
+        if (pow(this_uav_local_height_.value - itr->second.point.z, 2)>=1) { /* using 3D */
+        
+          range       = sqrt(pow(focal_x - itr->second.point.x, 2) + pow(focal_y - itr->second.point.y,
+                               2) + pow(this_uav_local_height_.value - itr->second.point.z, 2));
+
+          inclination = math_utils::inclination(focal_x, focal_y, this_uav_local_height_.value, itr->second.point.x, itr->second.point.y,
+                                                  itr->second.point.z);
+        } else { /* using 2D */
+          
+          max_height_difference = math_utils::getMaxValue(max_height_difference, itr->second.point.z);
+
+          range       = sqrt(pow(focal_x - itr->second.point.x, 2) + pow(focal_y - itr->second.point.y, 2));
+          inclination = M_PI / 2;
+        }
+
+
+        //const double range       = sqrt(pow(focal_x - itr->second.point.x, 2) + pow(focal_y - itr->second.point.y, 2));
+        //const double inclination = M_PI / 2;
 
         /* estimate max height difference */
-        max_height_difference = math_utils::getMaxValue(max_height_difference, itr->second.point.z);
+        //max_height_difference = math_utils::getMaxValue(max_height_difference, itr->second.point.z);
 
         neighbor_info.range.push_back(range);
         neighbor_info.bearing.push_back(bearing);
