@@ -49,7 +49,7 @@ private:
   bool hover_mode_;
   bool swarming_mode_;
   bool _use_3D_;
-  bool first_run_;
+  bool has_virtual_heading_;
 
   /* ros parameters */
   std::string _uav_name_;
@@ -80,7 +80,11 @@ private:
   double virtual_heading_;
   double smooth_heading_;
   double initial_heading_;
-
+  
+  void callbackThisUAVOdom(const nav_msgs::Odometry::ConstPtr& odom);
+  std::mutex mutex_virtual_heading_;
+  ros::Subscriber sub_this_uav_odom_;
+  
   // | ----------------------- message filters callbacks ----------------------- |
 
   typedef sync_policies::ApproximateTime<flocking::Neighbors, nav_msgs::Odometry, mrs_msgs::Float64Stamped> FormationPolicy;
