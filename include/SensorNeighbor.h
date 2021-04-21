@@ -63,7 +63,13 @@ private:
   ros::Subscriber          sub_this_uav_local_odom_;
   mrs_msgs::Float64Stamped this_uav_local_height_;
   bool                     has_this_uav_local_height_;
-
+  
+  void callbackThisUAVVirtualHeading(const mrs_msgs::Float64Stamped::ConstPtr& virtual_heading);
+  ros::Subscriber sub_virtual_heading_;
+  double this_uav_virtual_heading_;
+  bool _use_fixed_heading_;
+  std::mutex mutex_virtual_heading_;
+  
   /* GPS */
   void                                             callbackNeighborsUsingGPSOdom(const nav_msgs::Odometry::ConstPtr& odom, const unsigned int uav_id);
   std::vector<ros::Subscriber>                     sub_odom_uavs_;
