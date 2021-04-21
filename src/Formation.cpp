@@ -158,7 +158,7 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
     return;
   }
   
-  if (_use_fixed_heading && !has_virtual_heading_) {
+  if (_fixed_heading_ && !has_virtual_heading_) {
     return;  
   }
   

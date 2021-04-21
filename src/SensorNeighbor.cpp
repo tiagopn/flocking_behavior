@@ -157,7 +157,7 @@ void SensorNeighbor::callbackThisUAVLocalOdom(const mrs_msgs::Float64Stamped::Co
 
 // callbackThisUAVVirtualHeading() //
   
-void SensorNeighbor::callbackThisUAVVirtualHeading(const mrs_msgs::Float64Stamped::ConstPrt& virtual_heading) {
+void SensorNeighbor::callbackThisUAVVirtualHeading(const mrs_msgs::Float64Stamped::ConstPtr& virtual_heading) {
   if (!is_initialized_) {
     return;
   }
@@ -174,7 +174,7 @@ void SensorNeighbor::callbackThisUAVVirtualHeading(const mrs_msgs::Float64Stampe
 
 //}
   
-void SensorNeighbor::callbackThisUAVModeChanged(const flocking::Neighbors::ConstPrt& mode_changed) {
+void SensorNeighbor::callbackThisUAVModeChanged(const flocking::ModeStamped::ConstPtr& mode_changed) {
   if (!is_initialized_) {
     return;
   }

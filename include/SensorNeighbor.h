@@ -74,7 +74,8 @@ private:
   bool has_this_uav_virtual_heading_;
   std::mutex mutex_virtual_heading_;
   
-  void callbackThisUAVModeChanged(const flocking::ModeChanged::ConstPrt& mode_changed);
+  void callbackThisUAVModeChanged(const flocking::ModeStamped::ConstPtr& mode_changed);
+  ros::Subscriber sub_this_uav_mode_changed_;
   bool has_started_swarming_mode_;
   bool last_message_invalid_;
   ros::Time last_message_invalid_time_; 

@@ -1,2 +1,2 @@
 sensor_type: "uvdar" # {gps, uvdar}
-use_fixed_headidng: true
+use_fixed_heading: true
