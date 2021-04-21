@@ -10,6 +10,8 @@ void SensorNeighbor::onInit() {
   /* set flags to false */
   is_initialized_ = false;
   has_this_pose_  = false;
+  has_started_swarming_mode_ = false;
+  last_message_invalid_ = false;
 
   ros::NodeHandle nh("~");
 
@@ -75,7 +77,10 @@ void SensorNeighbor::onInit() {
     sub_uvdar_filtered_poses_ = nh.subscribe<mrs_msgs::PoseWithCovarianceArrayStamped>("/" + _this_uav_name_ + "/uvdar/filteredPoses", 1,
                                 &SensorNeighbor::callbackNeighborsUsingUVDAR, this);
     
-    sub_virtual_heading_ = nh.subscribe<mrs_msgs::Float64Stamped>("/" + _this_uav_name_ + "/flocking/virtual_heading", 1, &SensorNeighbor::callbackThisUAVVirtualHeading, this);
+    if (_use_fixed_heading_) {
+        sub_virtual_heading_ = nh.subscribe<mrs_msgs::Float64Stamped>("/" + _this_uav_name_ + "/flocking/virtual_heading", 1, &SensorNeighbor::callbackThisUAVVirtualHeading, this);  
+    }
+    
   } else {
     ROS_ERROR("[SensorNeighbor]: The sensor %s is not supported. Shutting down.", _sensor_type_.c_str());
     ros::shutdown();
@@ -152,7 +157,7 @@ void SensorNeighbor::callbackThisUAVLocalOdom(const mrs_msgs::Float64Stamped::Co
 
 // callbackThisUAVVirtualHeading() //
   
-void SensorNeighbor::callbackThisUAVVirtualHeading(const mrs_msgs::Float65Stamped::ConstPrt& virtual_heading) {
+void SensorNeighbor::callbackThisUAVVirtualHeading(const mrs_msgs::Float64Stamped::ConstPrt& virtual_heading) {
   if (!is_initialized_) {
     return;
   }
@@ -161,6 +166,9 @@ void SensorNeighbor::callbackThisUAVVirtualHeading(const mrs_msgs::Float65Stampe
     std::scoped_lock lock(mutex_virtual_heading_);
 
     this_uav_virtual_heading_ = virtual_heading->value;
+    
+    /* turn on flag */
+    has_this_uav_virtual_heading_ = true;
   }
 }
 
@@ -296,7 +304,11 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
   if (!is_initialized_ || !has_this_pose_) {
     return;
   }
-
+  
+  if (_use_fixed_heading_ && !has_this_uav_virtual_heading_) {
+    return;
+  }
+  
   /* create new neigbors message */
   flocking::Neighbors neighbor_info;
   const ros::Time     now = ros::Time::now();
@@ -407,16 +419,21 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
     }
   }
   
-  if (!last_message_invalid_ && has_started_swarming_mode_ && neighbor_info.range.size() == 0) {
-    last_message_invalid_ = true;
-    last_message_invalid_time_ = now;
-  } else {
-    last_message_invalid_ = false; 
-  }
-  
-  if ((now - last_message_invalid_time_).toSec() < 5.0) {
-    std_srvs::Trigger srv_land_call;
-    srv_client_land_.call(srv_land_call);
+  {
+    std::scoped_lock lock(mutex_mode_changed_);
+    if (has_started_swarming_mode_) {
+      bool this_message_invalid = (neighbor_info.range.size() == 0) ? true : false;
+      
+      if (!this_message_invalid){
+        last_message_invalid_ = false;
+      } else if (this_message_invalid && !last_message_invalid_) {
+        last_message_invalid_      = true;
+        last_message_invalid_time_ = now;
+      } else if ((now - last_message_invalid_time_).toSec() > 5.0) {
+        std_srvs::Trigger srv_land_call;
+        srv_client_land_.call(srv_land_call);
+      }
+    }
   }
   
   neighbor_info.header.frame_id = _this_uav_name_ + "/fcu";
