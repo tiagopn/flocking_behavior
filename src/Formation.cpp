@@ -12,7 +12,7 @@ void Formation::onInit() {
   hover_mode_            = false;
   swarming_mode_         = false;
   state_machine_running_ = false;
-  first_run_             = true;
+  has_virtual_heading_   = false;
 
   ros::NodeHandle nh("~");
 
@@ -69,7 +69,11 @@ void Formation::onInit() {
   /* smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading(); */
   
   pub_virtual_heading_ = nh.advertise<mrs_msgs::Float64Stamped>("/" + _uav_name_ + "/flocking/virtual_heading", 1);
- 
+  
+  /* subscribers */
+  sub_this_uav_odom_ = nh.subscribe<nav_msgs::Odometry>("/" + _uav_name_ + "/odometry/odom_main", 1,
+                               &Formation::callbackThisUAVOdom, this);
+  
   /* publishers */
   pub_mode_changed_ = nh.advertise<flocking::ModeStamped>("/" + _uav_name_ + "/flocking/mode_changed", 1);
 
@@ -92,7 +96,6 @@ void Formation::onInit() {
   timer_state_machine_ = nh.createTimer(ros::Duration(_timeout_state_change_), &Formation::callbackTimerStateMachine, this, true, false);
   timer_flocking_end_  = nh.createTimer(ros::Duration(_timeout_flocking_), &Formation::callbackTimerAbortFlocking, this, false, false);
 
-
   sync_.reset(new Sync(FormationPolicy(10), sub_neighbors_info_, sub_odom_, sub_height_));
   sync_->registerCallback(boost::bind(&Formation::callbackUAVNeighbors, this, _1, _2, _3));
 
@@ -106,6 +109,44 @@ void Formation::onInit() {
 
 //}
 
+/* callbackThisUAVOdom() //{ */
+void Formation::callbackThisUAVOdom(const nav_msgs::Odometry::ConstPtr& odom) {
+  if (!is_initialized_) {
+    return;  
+  }
+  
+  if (!has_virtual_heading_) {
+    if (_fixed_heading_) {
+      {
+        std::scoped_lock lock(mutex_virtual_heading_);
+        initial_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
+        virtual_heading_ = initial_heading_;
+      }
+    } else {
+      smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
+    }
+    
+    has_virtual_heading_ = true;
+  }
+  
+  {
+    std::scoped_lock lock(mutex_virtual_heading_);
+    
+    /* create float64 stamped msg */
+    mrs_msgs::Float64Stamped msg_float_stamped;
+  
+    /* fill in */
+    msg_float_stamped.header.stamp    = ros::Time::now();
+    msg_float_stamped.header.frame_id = _uav_name_ + "/" + _frame_;
+    msg_float_stamped.value           = virtual_heading_;
+
+    /* publish virtual heading */
+    pub_virtual_heading_.publish(msg_float_stamped);
+  }
+}
+
+//}
+  
 // | ----------------------- message filters callbacks ----------------------- |
 
 /* callbackUAVNeighbors() //{ */
@@ -113,22 +154,14 @@ void Formation::onInit() {
 void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighbors, const nav_msgs::Odometry::ConstPtr& odom,
                                      const mrs_msgs::Float64Stamped::ConstPtr& height) {
   /* return if is not initialized or the code is not on swarming mode */
-
-  if (first_run_) {
-    //smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
-    if (_fixed_heading_) {
-      initial_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
-      virtual_heading_ = initial_heading_;
-    } else {
-      smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
-    }
-    first_run_      = false;
-  }
-
   if (!is_initialized_ || !swarming_mode_) {
     return;
   }
-
+  
+  if (_use_fixed_heading && !has_virtual_heading_) {
+    return;  
+  }
+  
   /* calculate proximal control vector P */
   double prox_vector_x = 0.0;
   double prox_vector_y = 0.0;
@@ -167,27 +200,18 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
   double heading = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
 
   if (_fixed_heading_) {
-    virtual_heading_ = mrs_lib::geometry::radians::interp(virtual_heading_, heading, _interpolate_coeff_);
+    {
+      std::scoped_lock lock(mutex_virtual_heading_);
+      virtual_heading_ = mrs_lib::geometry::radians::interp(virtual_heading_, heading, _interpolate_coeff_);
 
-    /* fill in reference */
-    srv_reference_stamped_msg.request.reference.position.x = odom->pose.pose.position.x + u * cos(virtual_heading_);
-    srv_reference_stamped_msg.request.reference.position.y = odom->pose.pose.position.y + u * sin(virtual_heading_);
-    srv_reference_stamped_msg.request.reference.heading    = initial_heading_;
+      /* fill in reference */
+      srv_reference_stamped_msg.request.reference.position.x = odom->pose.pose.position.x + u * cos(virtual_heading_);
+      srv_reference_stamped_msg.request.reference.position.y = odom->pose.pose.position.y + u * sin(virtual_heading_);
+      srv_reference_stamped_msg.request.reference.heading    = initial_heading_;
 
-    /* update virtual heading */
-    virtual_heading_ = virtual_heading_ + w;
-
-    /* create float64 stamped msg */
-    mrs_msgs::Float64Stamped msg_float_stamped;
-  
-    /* fill in */
-    msg_float_stamped.header.stamp    = ros::Time::now();
-    msg_float_stamped.header.frame_id = _uav_name_ + "/" + _frame_;
-    msg_float_stamped.value           = virtual_heading_;
-
-    /* publish virtual heading */
-    pub_virtual_heading_.publish(msg_float_stamped);
-
+      /* update virtual heading */
+      virtual_heading_ = virtual_heading_ + w;
+    }
   } else {
 
     smooth_heading_ = mrs_lib::geometry::radians::interp(smooth_heading_, heading, _interpolate_coeff_);
