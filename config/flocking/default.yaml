@@ -19,7 +19,7 @@ flocking:
 
   # Motion control parameters
   motion:
-    K1: 0.4  # Linear gain: 0.5 for GPS | 0.6 for 2D UVDAR
+    K1: 0.6  # Linear gain: 0.5 for GPS | 0.6 for 2D UVDAR
     K2: 0.05  # Angular gain: 0.2 for GPS | 0.05 for 2D UVDAR
     K3: 0.1
     move_forward: 0.3 

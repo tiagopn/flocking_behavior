@@ -419,6 +419,8 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
     }
   }
   
+  
+  // safeguard for nessage from neighbors
   {
     std::scoped_lock lock(mutex_mode_changed_);
     if (has_started_swarming_mode_) {
@@ -429,7 +431,7 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
       } else if (this_message_invalid && !last_message_invalid_) {
         last_message_invalid_      = true;
         last_message_invalid_time_ = now;
-      } else if ((now - last_message_invalid_time_).toSec() > 5.0) {
+      } else if ((now - last_message_invalid_time_).toSec() > 20.0) {
         std_srvs::Trigger srv_land_call;
         srv_client_land_.call(srv_land_call);
       }
