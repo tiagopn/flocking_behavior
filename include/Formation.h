@@ -87,6 +87,9 @@ private:
   void callbackThisUAVOdom(const nav_msgs::Odometry::ConstPtr& odom);
   std::mutex mutex_virtual_heading_;
   ros::Subscriber sub_this_uav_odom_;
+  nav_msgs::Odometry this_uav_odom_;
+  std::atomic<bool> got_this_uav_odom_ = false;
+  std::mutex mutex_this_uav_odom_;
   
   // | ----------------------- message filters callbacks ----------------------- |
 

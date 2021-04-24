@@ -24,7 +24,7 @@ void Formation::onInit() {
   param_loader.loadParam("uav_name", _uav_name_);
   param_loader.loadParam("frame", _frame_);
   param_loader.loadParam("land_at_the_end", _land_end_);
-  //param_loader.loadParam("use_3D", _use_3D_);
+  // param_loader.loadParam("use_3D", _use_3D_);
   param_loader.loadParam("minimum_height", _minimum_height_);
 
   param_loader.loadParam("flocking/auto_start", _auto_start_);
@@ -62,18 +62,19 @@ void Formation::onInit() {
   max_range_ = _range_multipler_ * _desired_distance_;
 
   /* get current heading */
-  /* nav_msgs::Odometry::ConstPtr       odom   = ros::topic::waitForMessage<nav_msgs::Odometry>("/" + _uav_name_ + "/control_manager/cmd_odom", ros::Duration(15)); */
-  /* mrs_msgs::Float64Stamped::ConstPtr height = ros::topic::waitForMessage<mrs_msgs::Float64Stamped>("/" + _uav_name_ + "/odometry/height", ros::Duration(15)); */
+  /* nav_msgs::Odometry::ConstPtr       odom   = ros::topic::waitForMessage<nav_msgs::Odometry>("/" + _uav_name_ + "/control_manager/cmd_odom",
+   * ros::Duration(15)); */
+  /* mrs_msgs::Float64Stamped::ConstPtr height = ros::topic::waitForMessage<mrs_msgs::Float64Stamped>("/" + _uav_name_ + "/odometry/height", ros::Duration(15));
+   */
 
   /* set smooth or virtual heading */
   /* smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading(); */
-  
+
   pub_virtual_heading_ = nh.advertise<mrs_msgs::Float64Stamped>("/" + _uav_name_ + "/flocking/virtual_heading", 1);
-  
+
   /* subscribers */
-  sub_this_uav_odom_ = nh.subscribe<nav_msgs::Odometry>("/" + _uav_name_ + "/control_manager/cmd_odom", 1,
-                               &Formation::callbackThisUAVOdom, this);
-  
+  sub_this_uav_odom_ = nh.subscribe<nav_msgs::Odometry>("/" + _uav_name_ + "/control_manager/cmd_odom", 1, &Formation::callbackThisUAVOdom, this);
+
   /* publishers */
   pub_mode_changed_ = nh.advertise<flocking::ModeStamped>("/" + _uav_name_ + "/flocking/mode_changed", 1);
 
@@ -111,42 +112,41 @@ void Formation::onInit() {
 
 /* callbackThisUAVOdom() //{ */
 void Formation::callbackThisUAVOdom(const nav_msgs::Odometry::ConstPtr& odom) {
+
   if (!is_initialized_) {
-    return;  
+    return;
   }
-  
-  if (!has_virtual_heading_) {
-    if (_fixed_heading_) {
-      {
-        std::scoped_lock lock(mutex_virtual_heading_);
-        initial_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
-        virtual_heading_ = initial_heading_;
-      }
-    } else {
-      smooth_heading_ = mrs_lib::AttitudeConverter(odom->pose.pose.orientation).getHeading();
-    }
-    
-    has_virtual_heading_ = true;
+
+  {
+    std::scoped_lock lock(mutex_this_uav_odom_);
+
+    this_uav_odom_ = *odom;
   }
-  
+
+  got_this_uav_odom_ = true;
+
   {
     std::scoped_lock lock(mutex_virtual_heading_);
-    
+
     /* create float64 stamped msg */
     mrs_msgs::Float64Stamped msg_float_stamped;
-  
+
     /* fill in */
     msg_float_stamped.header.stamp    = ros::Time::now();
     msg_float_stamped.header.frame_id = _uav_name_ + "/" + _frame_;
     msg_float_stamped.value           = virtual_heading_;
 
     /* publish virtual heading */
-    pub_virtual_heading_.publish(msg_float_stamped);
+    try {
+      pub_virtual_heading_.publish(msg_float_stamped);
+    } catch (...) {
+      ROS_ERROR("exception caught during publishing topic '%s'", pub_virtual_heading_.getTopic().c_str());
+    }
   }
 }
 
 //}
-  
+
 // | ----------------------- message filters callbacks ----------------------- |
 
 /* callbackUAVNeighbors() //{ */
@@ -157,11 +157,11 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
   if (!is_initialized_ || !swarming_mode_) {
     return;
   }
-  
+
   if (_fixed_heading_ && !has_virtual_heading_) {
-    return;  
+    return;
   }
-  
+
   /* calculate proximal control vector P */
   double prox_vector_x = 0.0;
   double prox_vector_y = 0.0;
@@ -172,7 +172,7 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
     for (unsigned int i = 0; i < neighbors->num_neighbors; i++) {
       if (neighbors->range[i] <= max_range_) {
         prox_magnitude = Formation::getProximalMagnitude(neighbors->range[i]);
-        
+
         prox_vector_x += prox_magnitude * sin(neighbors->inclination[i]) * cos(neighbors->bearing[i]);
         prox_vector_y += prox_magnitude * sin(neighbors->inclination[i]) * sin(neighbors->bearing[i]);
         prox_vector_z += prox_magnitude * cos(neighbors->inclination[i]);
@@ -214,13 +214,16 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
     }
   } else {
 
+    ROS_INFO("smooth heading before update: %.2f, heading %.2f", smooth_heading_, heading);
+
     smooth_heading_ = mrs_lib::geometry::radians::interp(smooth_heading_, heading, _interpolate_coeff_);
+
+    ROS_INFO("smooth heading after update: %.2f", smooth_heading_);
 
     /* fill in reference */
     srv_reference_stamped_msg.request.reference.position.x = odom->pose.pose.position.x + u * cos(heading);
     srv_reference_stamped_msg.request.reference.position.y = odom->pose.pose.position.y + u * sin(heading);
     srv_reference_stamped_msg.request.reference.heading    = smooth_heading_ + w;
-
   }
 
   double height_push;
@@ -235,16 +238,17 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
   }
 
   /* set height */
-  //if (_use_3D_) {
-    // srv_reference_stamped_msg.request.reference.position.z = math_utils::getMaxValue(odom->pose.pose.position.z + v, _minimum_height_);
+  // if (_use_3D_) {
+  // srv_reference_stamped_msg.request.reference.position.z = math_utils::getMaxValue(odom->pose.pose.position.z + v, _minimum_height_);
 
-    srv_reference_stamped_msg.request.reference.position.z = desired_altitude;
+  srv_reference_stamped_msg.request.reference.position.z = desired_altitude;
 
   //} else {
-    // srv_reference_stamped_msg.request.reference.position.z = math_utils::getMaxValue(odom->pose.pose.position.z + v, odom->pose.pose.position.z +
-    // neighbors->max_height_diff);
 
-    //desired_altitude = desired_altitude + neighbors->max_height_diff;
+  // srv_reference_stamped_msg.request.reference.position.z = math_utils::getMaxValue(odom->pose.pose.position.z + v, odom->pose.pose.position.z +
+  // neighbors->max_height_diff);
+
+  // desired_altitude = desired_altitude + neighbors->max_height_diff;
 
   //  srv_reference_stamped_msg.request.reference.position.z = desired_altitude;
   //}
@@ -415,17 +419,73 @@ bool Formation::callbackStartStateMachine([[maybe_unused]] std_srvs::Trigger::Re
 /* callbackStartHoverMode() //{ */
 
 bool Formation::callbackStartHoverMode([[maybe_unused]] std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
+
   if (!is_initialized_) {
     ROS_WARN("[Formation]: Cannot change to hover mode, nodelet is not initialized");
     res.message = "Cannot change to hover mode, nodelet is not initialized";
     res.success = false;
-    return false;
+    return true;
   } else if (state_machine_running_) {
     ROS_WARN("[Formation]: Cannot change to hover mode. The states are handled by a state machine.");
     res.message = "Cannot change to hover mode. The states are handled by a state machine.";
     res.success = false;
-    return false;
+    return true;
   }
+
+  if (!got_this_uav_odom_) {
+    ROS_WARN("[Formation]: Cannot change to hover mode. Missing this uav odom.");
+    res.message = "Cannot change to hover mode. Missing this uav odom.";
+    res.success = false;
+    return true;
+  }
+
+  nav_msgs::Odometry this_uav_odom;
+
+  {
+    std::scoped_lock lock(mutex_this_uav_odom_);
+
+    this_uav_odom = this_uav_odom_;
+  }
+
+  if (!has_virtual_heading_) {
+
+    double current_heading = 0;
+
+    try {
+      current_heading = mrs_lib::AttitudeConverter(this_uav_odom.pose.pose.orientation).getHeading();
+    }
+    catch (...) {
+      ROS_ERROR("[Formation]: exception caught while getting the heading in the hover callback");
+      res.message = "Cannot hover, exception while calculating current heading";
+      res.success = false;
+      return true;
+    }
+
+    if (!std::isfinite(current_heading)) {
+      ROS_ERROR("[Formation]: exception caught while getting the heading in the hover callback (NaN)");
+      res.message = "Cannot hover, exception while calculating current heading";
+      res.success = false;
+      return true;
+    }
+
+    if (_fixed_heading_) {
+      {
+        std::scoped_lock lock(mutex_virtual_heading_);
+        initial_heading_ = current_heading;
+        virtual_heading_ = current_heading;
+      }
+
+    } else {
+
+      smooth_heading_ = current_heading;
+    }
+
+    has_virtual_heading_ = true;
+  }
+
+  ROS_INFO("[Formation]: initial heading is %.2f", initial_heading_);
+  ROS_INFO("[Formation]: virtual heading is %.2f", virtual_heading_);
+  ROS_INFO("[Formation]: smooth heading is %.2f", smooth_heading_);
 
   /* change code to hover mode */
   hover_mode_ = true;
