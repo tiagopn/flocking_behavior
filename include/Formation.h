@@ -77,9 +77,12 @@ private:
   double _interpolate_coeff_;
   bool  _fixed_heading_;
 
-  double virtual_heading_;
-  double smooth_heading_;
-  double initial_heading_;
+  // + initializatio to zero, cause
+  // you might be using this in the synchronized callback even before
+  // you initialize this in the custom odom callback
+  double virtual_heading_ = 0;
+  double smooth_heading_ = 0;
+  double initial_heading_ = 0;
   
   void callbackThisUAVOdom(const nav_msgs::Odometry::ConstPtr& odom);
   std::mutex mutex_virtual_heading_;
