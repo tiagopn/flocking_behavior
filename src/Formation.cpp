@@ -62,7 +62,7 @@ void Formation::onInit() {
   max_range_ = _range_multipler_ * _desired_distance_;
 
   /* get current heading */
-  /* nav_msgs::Odometry::ConstPtr       odom   = ros::topic::waitForMessage<nav_msgs::Odometry>("/" + _uav_name_ + "/odometry/odom_main", ros::Duration(15)); */
+  /* nav_msgs::Odometry::ConstPtr       odom   = ros::topic::waitForMessage<nav_msgs::Odometry>("/" + _uav_name_ + "/control_manager/cmd_odom", ros::Duration(15)); */
   /* mrs_msgs::Float64Stamped::ConstPtr height = ros::topic::waitForMessage<mrs_msgs::Float64Stamped>("/" + _uav_name_ + "/odometry/height", ros::Duration(15)); */
 
   /* set smooth or virtual heading */
@@ -71,14 +71,14 @@ void Formation::onInit() {
   pub_virtual_heading_ = nh.advertise<mrs_msgs::Float64Stamped>("/" + _uav_name_ + "/flocking/virtual_heading", 1);
   
   /* subscribers */
-  sub_this_uav_odom_ = nh.subscribe<nav_msgs::Odometry>("/" + _uav_name_ + "/odometry/odom_main", 1,
+  sub_this_uav_odom_ = nh.subscribe<nav_msgs::Odometry>("/" + _uav_name_ + "/control_manager/cmd_odom", 1,
                                &Formation::callbackThisUAVOdom, this);
   
   /* publishers */
   pub_mode_changed_ = nh.advertise<flocking::ModeStamped>("/" + _uav_name_ + "/flocking/mode_changed", 1);
 
   /* message filters */
-  sub_odom_.subscribe(nh, "/" + _uav_name_ + "/odometry/odom_main", 1);
+  sub_odom_.subscribe(nh, "/" + _uav_name_ + "/control_manager/cmd_odom", 1);
   sub_neighbors_info_.subscribe(nh, "/" + _uav_name_ + "/sensor_neighbor/neighbors", 1);
   sub_height_.subscribe(nh, "/" + _uav_name_ + "/odometry/height", 1);
 
@@ -250,8 +250,8 @@ void Formation::callbackUAVNeighbors(const flocking::Neighbors::ConstPtr& neighb
   //}
 
   bw_.clearBuffers();
-  /* bw_.clearVisuals(); */
-  bw_.publish();
+  bw_.clearVisuals();
+
   bw_.setParentFrame(srv_reference_stamped_msg.request.header.frame_id);
 
   // example of plotting a red square
