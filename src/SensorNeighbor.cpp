@@ -8,10 +8,10 @@ namespace sensor_neighbor
 
 void SensorNeighbor::onInit() {
   /* set flags to false */
-  is_initialized_ = false;
-  has_this_pose_  = false;
+  is_initialized_            = false;
+  has_this_pose_             = false;
   has_started_swarming_mode_ = false;
-  last_message_invalid_ = false;
+  last_message_invalid_      = false;
 
   ros::NodeHandle nh("~");
 
@@ -21,16 +21,19 @@ void SensorNeighbor::onInit() {
 
   /* load parameters */
   param_loader.loadParam("sensor_type", _sensor_type_);
-  //param_loader.loadParam("use_3D", _use_3D_);
-  
+  // param_loader.loadParam("use_3D", _use_3D_);
+
   param_loader.loadParam("uav_name", _this_uav_name_);
-  
+
   param_loader.loadParam("use_fixed_heading", _use_fixed_heading_);
 
   if (!param_loader.loadedSuccessfully()) {
     ROS_ERROR("[SensorNeighbor]: failed to load non-optional parameters!");
     ros::shutdown();
   }
+
+  sub_this_uav_local_odom_ =
+      nh.subscribe<mrs_msgs::Float64Stamped>("/" + _this_uav_name_ + "/odometry/height", 1, &SensorNeighbor::callbackThisUAVLocalOdom, this);
 
   /* instantiate subscribers based on used sensor type */
   if (_sensor_type_ == "gps") {
@@ -53,34 +56,33 @@ void SensorNeighbor::onInit() {
     for (unsigned int i = 0; i < _uav_names_.size(); i++) {
       if (_uav_names_[i] == _this_uav_name_) {
         continue;
-      } 
+      }
 
       /* generate UAV index using UAV name */
       unsigned int uav_id = std::stoi(_uav_names_[i].substr(3));
-      
+
       /* subscribe to slow_odom */
       sub_odom_uavs_.push_back(nh.subscribe<nav_msgs::Odometry>("/" + _uav_names_[i] + "/odometry/slow_odom", 1,
-                               boost::bind(&SensorNeighbor::callbackNeighborsUsingGPSOdom, this, _1, uav_id)));
-      
+                                                                boost::bind(&SensorNeighbor::callbackNeighborsUsingGPSOdom, this, _1, uav_id)));
+
       /* subscribe to odom_local */
-      //sub_odom_local_uavs_.push_back(nh.subscribe<nav_msgs::Odometry>("/" + _uav_names_[i] + "/odometry/odom_local", 1,
+      // sub_odom_local_uavs_.push_back(nh.subscribe<nav_msgs::Odometry>("/" + _uav_names_[i] + "/odometry/odom_local", 1,
       //                               boost::bind(&SensorNeighbor::callbackNeighborsUsingGPSOdomLocal, this, _1, uav_id)));
-      sub_odom_local_uavs_.push_back(nh.subscribe<mrs_msgs::Float64Stamped>("/" + _uav_names_[i] + "/odometry/height", 1,
-                                     boost::bind(&SensorNeighbor::callbackNeighborsUsingGPSOdomLocal, this, _1, uav_id)));
+      sub_odom_local_uavs_.push_back(nh.subscribe<mrs_msgs::Float64Stamped>(
+          "/" + _uav_names_[i] + "/odometry/height", 1, boost::bind(&SensorNeighbor::callbackNeighborsUsingGPSOdomLocal, this, _1, uav_id)));
     }
-    
-    sub_this_uav_local_odom_ = nh.subscribe<mrs_msgs::Float64Stamped>("/" + _this_uav_name_ + "/odometry/height", 1,
-                               &SensorNeighbor::callbackThisUAVLocalOdom, this);
+
 
   } else if (_sensor_type_ == "uvdar") {
     /* subscribe to UVDAR filtered poses */
     sub_uvdar_filtered_poses_ = nh.subscribe<mrs_msgs::PoseWithCovarianceArrayStamped>("/" + _this_uav_name_ + "/uvdar/filteredPoses", 1,
-                                &SensorNeighbor::callbackNeighborsUsingUVDAR, this);
-    
+                                                                                       &SensorNeighbor::callbackNeighborsUsingUVDAR, this);
+
     if (_use_fixed_heading_) {
-        sub_virtual_heading_ = nh.subscribe<mrs_msgs::Float64Stamped>("/" + _this_uav_name_ + "/flocking/virtual_heading", 1, &SensorNeighbor::callbackThisUAVVirtualHeading, this);  
+      sub_virtual_heading_ =
+          nh.subscribe<mrs_msgs::Float64Stamped>("/" + _this_uav_name_ + "/flocking/virtual_heading", 1, &SensorNeighbor::callbackThisUAVVirtualHeading, this);
     }
-    
+
   } else {
     ROS_ERROR("[SensorNeighbor]: The sensor %s is not supported. Shutting down.", _sensor_type_.c_str());
     ros::shutdown();
@@ -88,12 +90,13 @@ void SensorNeighbor::onInit() {
 
   /* subscribe to this UAV Odometry */
   sub_this_uav_odom_ = nh.subscribe<nav_msgs::Odometry>("/" + _this_uav_name_ + "/odometry/odom_main", 1, &SensorNeighbor::callbackThisUAVOdom, this);
-  
-  sub_this_uav_mode_changed_ = nh.subscribe<flocking::ModeStamped>("/" + _this_uav_name_ + "/flocking/mode_changed", 1, &SensorNeighbor::callbackThisUAVModeChanged, this);
-  
+
+  sub_this_uav_mode_changed_ =
+      nh.subscribe<flocking::ModeStamped>("/" + _this_uav_name_ + "/flocking/mode_changed", 1, &SensorNeighbor::callbackThisUAVModeChanged, this);
+
   /* services */
   srv_client_land_ = nh.serviceClient<std_srvs::Trigger>("/" + _this_uav_name_ + "/uav_manager/land");
-  
+
   /* publisher */
   pub_neighbors_ = nh.advertise<flocking::Neighbors>("/" + _this_uav_name_ + "/sensor_neighbor/neighbors", 1);
 
@@ -113,7 +116,7 @@ void SensorNeighbor::onInit() {
 
 // | ---------------------- subscriber callbacks ------------------------- |
 
-// callbackThisUAVOdom() --> call back para a pose deste UAV 
+// callbackThisUAVOdom() --> call back para a pose deste UAV
 
 void SensorNeighbor::callbackThisUAVOdom(const nav_msgs::Odometry::ConstPtr& odom) {
   if (!is_initialized_) {
@@ -156,29 +159,29 @@ void SensorNeighbor::callbackThisUAVLocalOdom(const mrs_msgs::Float64Stamped::Co
 //}
 
 // callbackThisUAVVirtualHeading() //
-  
+
 void SensorNeighbor::callbackThisUAVVirtualHeading(const mrs_msgs::Float64Stamped::ConstPtr& virtual_heading) {
   if (!is_initialized_) {
     return;
   }
-  
+
   {
     std::scoped_lock lock(mutex_virtual_heading_);
 
     this_uav_virtual_heading_ = virtual_heading->value;
-    
+
     /* turn on flag */
     has_this_uav_virtual_heading_ = true;
   }
 }
 
 //}
-  
+
 void SensorNeighbor::callbackThisUAVModeChanged(const flocking::ModeStamped::ConstPtr& mode_changed) {
   if (!is_initialized_) {
     return;
   }
-  
+
   if (mode_changed->mode == "Swarming") {
     {
       std::scoped_lock lock(mutex_mode_changed_);
@@ -186,7 +189,7 @@ void SensorNeighbor::callbackThisUAVModeChanged(const flocking::ModeStamped::Con
     }
   }
 }
-  
+
 // callbackNeighborsUsingGPSOdom() --> call back para a pose dos UAVs Vizinhos usando GPS
 
 void SensorNeighbor::callbackNeighborsUsingGPSOdom(const nav_msgs::Odometry::ConstPtr& odom, const unsigned int uav_id) {
@@ -226,7 +229,7 @@ void SensorNeighbor::callbackNeighborsUsingGPSOdomLocal(const mrs_msgs::Float64S
 
   {
     std::scoped_lock lock(mutex_neighbors_height_);
-    
+
     /* create new msg */
     mrs_msgs::Float64Stamped uav_height;
 
@@ -257,7 +260,7 @@ void SensorNeighbor::callbackNeighborsUsingUVDAR(const mrs_msgs::PoseWithCovaria
     std::scoped_lock lock(mutex_this_uav_pose_);
     odom_frame_id = this_uav_pose_.header.frame_id;
   }
-  
+
   auto tf = tfr_.getTransform(array_poses->header.frame_id, odom_frame_id);
   if (!tf.has_value()) {
     ROS_WARN("Could not transform pose from %s to %s", array_poses->header.frame_id.c_str(), odom_frame_id.c_str());
@@ -304,11 +307,11 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
   if (!is_initialized_ || !has_this_pose_) {
     return;
   }
-  
+
   if (_use_fixed_heading_ && !has_this_uav_virtual_heading_) {
     return;
   }
-  
+
   /* create new neigbors message */
   flocking::Neighbors neighbor_info;
   const ros::Time     now = ros::Time::now();
@@ -328,32 +331,36 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
     {
       std::scoped_lock lock(mutex_neighbors_position_2d_);
 
-      for (auto itr_point = neighbors_position_2d_.begin(); itr_point != neighbors_position_2d_.end(); ++itr_point) {      
+      for (auto itr_point = neighbors_position_2d_.begin(); itr_point != neighbors_position_2d_.end(); ++itr_point) {
         /* check 2D position stamp */
-        if ((now - itr_point->second.header.stamp).toSec() > 2.0) continue;
+        if ((now - itr_point->second.header.stamp).toSec() > 2.0)
+          continue;
 
         /* estimate bearing */
         const double bearing = math_utils::relativeBearing(focal_x, focal_y, focal_heading, itr_point->second.x, itr_point->second.y);
-        
+
         double range, inclination;
-        
+
         {
           std::scoped_lock lock(mutex_neighbors_height_);
-          
+
           /* check if the height of the uav in the local_origin frame is available */
-          if (neighbors_height_.find(itr_point->first) == neighbors_height_.end()) continue;
+          if (neighbors_height_.find(itr_point->first) == neighbors_height_.end())
+            continue;
 
           /* check height stamp */
           unsigned int uav_id = itr_point->first;
-          if ((now - neighbors_height_[uav_id].header.stamp).toSec() > 2.0) continue;
+          if ((now - neighbors_height_[uav_id].header.stamp).toSec() > 2.0)
+            continue;
 
           /* check if this uav local height is available and local height stamp */
-          if (!has_this_uav_local_height_ || (now - this_uav_local_height_.header.stamp).toSec() > 2.0) continue;
+          if (!has_this_uav_local_height_ || (now - this_uav_local_height_.header.stamp).toSec() > 2.0)
+            continue;
 
-          if (pow(this_uav_local_height_.value - neighbors_height_[uav_id].value, 2)>=1) { /* using 3D */
+          if (pow(this_uav_local_height_.value - neighbors_height_[uav_id].value, 2) >= 1) { /* using 3D */
             /* estimate range and inclination */
-            range       = sqrt(pow(focal_x - itr_point->second.x, 2) + pow(focal_y - itr_point->second.y,
-                               2) + pow(this_uav_local_height_.value - neighbors_height_[uav_id].value, 2));
+            range = sqrt(pow(focal_x - itr_point->second.x, 2) + pow(focal_y - itr_point->second.y, 2) +
+                         pow(this_uav_local_height_.value - neighbors_height_[uav_id].value, 2));
 
             inclination = math_utils::inclination(focal_x, focal_y, this_uav_local_height_.value, itr_point->second.x, itr_point->second.y,
                                                   neighbors_height_[uav_id].value);
@@ -366,7 +373,7 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
             inclination = M_PI / 2;
           }
         }
-        
+
         neighbor_info.range.push_back(range);
         neighbor_info.bearing.push_back(bearing);
         neighbor_info.inclination.push_back(inclination);
@@ -379,7 +386,7 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
       if ((now - itr->second.header.stamp).toSec() < 2.0) {
         /* estimate bearing, range and inclination */
         double bearing;
-        if (_use_fixed_heading_){
+        if (_use_fixed_heading_) {
           {
             std::scoped_lock lock(mutex_virtual_heading_);
             bearing = math_utils::relativeBearing(focal_x, focal_y, this_uav_virtual_heading_, itr->second.point.x, itr->second.point.y);
@@ -390,15 +397,14 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
 
         double range, inclination;
 
-        if (pow(this_uav_local_height_.value - itr->second.point.z, 2)>=1) { /* using 3D */
-        
-          range       = sqrt(pow(focal_x - itr->second.point.x, 2) + pow(focal_y - itr->second.point.y,
-                               2) + pow(this_uav_local_height_.value - itr->second.point.z, 2));
+        if (pow(this_uav_local_height_.value - itr->second.point.z, 2) >= 1) { /* using 3D */
 
-          inclination = math_utils::inclination(focal_x, focal_y, this_uav_local_height_.value, itr->second.point.x, itr->second.point.y,
-                                                  itr->second.point.z);
+          range =
+              sqrt(pow(focal_x - itr->second.point.x, 2) + pow(focal_y - itr->second.point.y, 2) + pow(this_uav_local_height_.value - itr->second.point.z, 2));
+
+          inclination = math_utils::inclination(focal_x, focal_y, this_uav_local_height_.value, itr->second.point.x, itr->second.point.y, itr->second.point.z);
         } else { /* using 2D */
-          
+
           max_height_difference = math_utils::getMaxValue(max_height_difference, itr->second.point.z);
 
           range       = sqrt(pow(focal_x - itr->second.point.x, 2) + pow(focal_y - itr->second.point.y, 2));
@@ -406,11 +412,11 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
         }
 
 
-        //const double range       = sqrt(pow(focal_x - itr->second.point.x, 2) + pow(focal_y - itr->second.point.y, 2));
-        //const double inclination = M_PI / 2;
+        // const double range       = sqrt(pow(focal_x - itr->second.point.x, 2) + pow(focal_y - itr->second.point.y, 2));
+        // const double inclination = M_PI / 2;
 
         /* estimate max height difference */
-        //max_height_difference = math_utils::getMaxValue(max_height_difference, itr->second.point.z);
+        // max_height_difference = math_utils::getMaxValue(max_height_difference, itr->second.point.z);
 
         neighbor_info.range.push_back(range);
         neighbor_info.bearing.push_back(bearing);
@@ -418,15 +424,15 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
       }
     }
   }
-  
-  
+
+
   // safeguard for nessage from neighbors
   {
     std::scoped_lock lock(mutex_mode_changed_);
     if (has_started_swarming_mode_) {
       bool this_message_invalid = (neighbor_info.range.size() == 0) ? true : false;
-      
-      if (!this_message_invalid){
+
+      if (!this_message_invalid) {
         last_message_invalid_ = false;
       } else if (this_message_invalid && !last_message_invalid_) {
         last_message_invalid_      = true;
@@ -437,7 +443,7 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
       }
     }
   }
-  
+
   neighbor_info.header.frame_id = _this_uav_name_ + "/fcu";
   neighbor_info.header.stamp    = now;
   neighbor_info.num_neighbors   = neighbor_info.range.size();
