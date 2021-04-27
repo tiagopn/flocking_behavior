@@ -14,13 +14,13 @@ fi
 source $HOME/.bashrc
 
 # change this to your liking
-PROJECT_NAME=tiago_uvdar_swarm_3D
+PROJECT_NAME=tiago_uvdar_swarm_3D_fixed
 
 # do not change this
 MAIN_DIR=~/"bag_files"
 
 # following commands will be executed first in each window
-pre_input="mkdir -p $MAIN_DIR/$PROJECT_NAME; export WORLD_FILE=./world_desert_extended.yaml"
+pre_input="mkdir -p $MAIN_DIR/$PROJECT_NAME; export WORLD_FILE=./world.yaml"
 
 # define commands
 # 'name' 'command'
@@ -44,9 +44,9 @@ input=(
   'swarming_mode' 'rosservice call /command_sender/send_command "value: 1"'
   'sensor_neighbor' 'waitForRos; roslaunch flocking sensor_neighbor.launch config_sensor:=./custom_configs/sensor.yaml
 '
-  'uvdar_observer' 'waitForRos; roslaunch uvdar_core test_rw_two_sided.launch 
+  'uvdar_observer' 'waitForRos; roslaunch uvdar_core rw_three_sided.launch 
 '  
-  'uvdar_filter' 'waitForRos; roslaunch uvdar_core uvdar_kalman_identified.launch output_frame:='"$UAV_NAME"'/stable_origin  
+  'uvdar_filter' 'waitForRos; roslaunch uvdar_core uvdar_kalman_identified_3.launch output_frame:='"$UAV_NAME"'/stable_origin  
 '
   'throttle_left_camera' 'waitForRos; rosrun topic_tools throttle messages /'"$UAV_NAME"'/uvdar_bluefox/left/image_raw 2.0 
 '
