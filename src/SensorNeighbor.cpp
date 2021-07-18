@@ -440,6 +440,7 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
       } else if ((now - last_message_invalid_time_).toSec() > 20.0) {
         std_srvs::Trigger srv_land_call;
         srv_client_land_.call(srv_land_call);
+        ros::Duration(5.0).sleep();
       }
     }
   }
