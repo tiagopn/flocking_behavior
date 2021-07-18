@@ -14,19 +14,21 @@ fi
 source $HOME/.bashrc
 
 # change this to your liking
-PROJECT_NAME=tiago_gps_swarm_3D_in_the_dunes
+PROJECT_NAME=tiago_swarm
 
 # do not change this
 MAIN_DIR=~/"bag_files"
 
 # following commands will be executed first in each window
-pre_input="mkdir -p $MAIN_DIR/$PROJECT_NAME; export WORLD_FILE=./world_desert.yaml"
+pre_input="mkdir -p $MAIN_DIR/$PROJECT_NAME; export WORLD_FILE=./world_usmocku.yaml"
 
 # define commands
 # 'name' 'command'
 # DO NOT PUT SPACES IN THE NAMES
 input=(
   'Rosbag' 'waitForOffboard; ./record.sh
+'
+  'NodeChecker' 'waitForRos; roslaunch mrs_uav_general node_crash_checker.launch
 '
   'Nimbro' 'waitForRos; roslaunch mrs_uav_general nimbro.launch custom_config:=./custom_configs/nimbro.yaml custom_config_uav_names:=./custom_configs/uav_names.yaml
 '

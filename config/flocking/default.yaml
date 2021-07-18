@@ -11,21 +11,17 @@ flocking:
   duration: 1200 # [s]
 
   # Proximal control parameters
-  proximal: 
+  proximal:
     desired_distance: 6.0
-    range_multiplier: 3.0        #1.8 for GPS
+    range_multiplier: 1.8        # 1.8 for GPS, 3.0 was there otherwise...
     steepness_potential: 2.0
     strength_potential: 6.0
 
   # Motion control parameters
   motion:
-    K1: 0.6  # Linear gain: 0.5 for GPS | 0.6 for 2D UVDAR
+    K1: 0.5  # Linear gain: 0.5 for GPS | 0.6 for 2D UVDAR
     K2: 0.2  # Angular gain: 0.2 for GPS | 0.05 for 2D UVDAR
     K3: 0.1
-    move_forward: 0.3 
+    move_forward: 0.3
     interpolate_coeff: 0.95
-    fixed_heading: false 
-
-
-
-
+    fixed_heading: false
