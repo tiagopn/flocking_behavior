@@ -41,6 +41,8 @@ namespace sensor_neighbor
 class SensorNeighbor : public nodelet::Nodelet {
 public:
   virtual void onInit();
+  bool eland_marker = false; //To check if eland has been called before
+
 
 private:
   /* flags */

@@ -425,7 +425,6 @@ void SensorNeighbor::callbackTimerPubNeighbors([[maybe_unused]] const ros::Timer
     }
   }
 
-bool eland_marker = false; //To check if eland has been called before
   // safeguard for nessage from neighbors
   {
     std::scoped_lock lock(mutex_mode_changed_);
@@ -437,11 +436,11 @@ bool eland_marker = false; //To check if eland has been called before
       } else if (this_message_invalid && !last_message_invalid_) {
         last_message_invalid_      = true;
         last_message_invalid_time_ = now;
-      } else if ((now - last_message_invalid_time_).toSec() > 20.0 && eland_marker == false) {
+      } else if ((now - last_message_invalid_time_).toSec() > 20.0 && SensorNeighbor::eland_marker == false) {
         ROS_INFO("No Data Recieved: Triggering Landing");
         std_srvs::Trigger srv_land_call;
         srv_client_land_.call(srv_land_call);
-        eland_marker = true;
+        SensorNeighbor::eland_marker = true;
         ros::Duration(5.0).sleep();
       }
     }
